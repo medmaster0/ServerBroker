@@ -67,12 +67,17 @@ def threaded_client(conn, player_id):
 
 	isRegistered = False #keeps track of if we made a dictionary and registered it
 
+	recvBuffer = "" #a buffer to keep track of all the recieved data
+
 	#Loop For Duration of Server-Client Communication
 	while True:
 		try:
-			data = conn.recv(20*2048).decode('utf-8')
-			#data = conn.recv(2048)
-			print("This is the data:" + str(data))
+			data = conn.recv(2*2048)#.decode('utf-8')
+			recvBuffer = recvBuffer + str(data)
+			print("This is the data:" + str(data) + "\0")
+			print("\n\n\n\n\n\n")
+			#print("BUFFER")
+			#print("This is the buffer" + str(recvBuffer))
 
 			if not data:
 				print("disconnected")
@@ -81,9 +86,19 @@ def threaded_client(conn, player_id):
 				print("We recieved some data")
 
 			#Parse and Process Data Here
+			#Strip the TCP chunk characters 4) and (0 and 4*
+			recvBuffer = recvBuffer.replace("4)", "")
+			recvBuffer = recvBuffer.replace("(0", "")
+			recvBuffer = recvBuffer.replace("4*", "")
+
+			if "PRINT_BUFFER" in recvBuffer:
+				print(recvBuffer)
+
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("PRINT_BUFFER", "")
 
 			#concerning PLAYER REGISTRATION
-			if "REGISTER" in data:
+			if "REGISTER" in recvBuffer:
 				print("got register message")
 				#make dummy dict
 				temp_player = {
@@ -109,54 +124,94 @@ def threaded_client(conn, player_id):
 				#Register the dict into the list of players
 				#players.update(str(player_id) = temp_player)
 				players[player_id] = temp_player
+				isRegistered = True
 
-			if "CRE_NAME" in data:
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("REGISTER", "")
+
+			if "CRE_NAME" in recvBuffer:
+				print("cjecl name")
 				#Parse data for name
-				extracted_data = re.findall("CRE_NAME<([A-Za-z]*)>END_CRE_NAME", data)
+				extracted_data = re.findall("CRE_NAME<([A-Za-z]*)>END_CRE_NAME", recvBuffer)
 				#Register the new name in the player dict
 				players[player_id]["name"] = extracted_data[0]
 
-			if "CRE_PRIM" in data: 
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CRE_NAME<"+extracted_data[0]+">END_CRE_NAME", "")
+
+				print("end name")
+
+			if "CRE_PRIM" in recvBuffer: 
+				print("cjecl cre prim")
 				#Parse data for crePrim (note that weird regex expression to match float or int)
 				extracted_data = re.findall("CRE_PRIM<(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)>END_CRE_PRIM", data)
 				#Register the new color in the player dict
 				players[player_id]["crePrim"] = (extracted_data[0][0],extracted_data[0][1],extracted_data[0][2])
 
-			if "CRE_POS" in data:
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CRE_PRIM<"+extracted_data[0][0]+","+extracted_data[0][1]+","+extracted_data[0][2]+">END_CRE_PRIM", "")
+
+				print("end cre prim")
+
+			if "CRE_POS" in recvBuffer:
+				print("cjecl cre pos")
 				#Parse data for position
 				extracted_data = re.findall("CRE_POS<(\d+),(\d+),(\d+)>END_CRE_POS", data)
 				#Register the new data in the player dict
 				players[player_id]["pos"] = (extracted_data[0][0],extracted_data[0][1],extracted_data[0][2])
 
-			if "CLOTHES_INDEX" in data:
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CRE_POS<"+extracted_data[0][0]+","+extracted_data[0][1]+","+extracted_data[0][2]+">END_CRE_POS", "")
+
+			if "CLOTHES_INDEX" in recvBuffer:
+				print("cjecl cloth ind")
 				#Parse data for name
 				extracted_data = re.findall("CLOTHES_INDEX<(\d+)>END_CLOTHES_INDEX", data)
 				#REgister in player dict
 				players[player_id]["clothesIndex"] = extracted_data[0]
 
-			if "CLOTHES_PRIM" in data: 
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CLOTHES_INDEX<"+extracted_data[0]+">END_CLOTHES_INDEX", "")
+
+			if "CLOTHES_PRIM" in recvBuffer: 
+				print("cjecl cloth prim")
 				#Parse data 
 				extracted_data = re.findall("CLOTHES_PRIM<(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)>END_CLOTHES_PRIM", data)
 				#Register the new color in the player dict
 				players[player_id]["clothesPrim"] = (extracted_data[0][0],extracted_data[0][1],extracted_data[0][2])
 
-			if "CLOTHES_SECO" in data: 
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CLOTHES_PRIM<"+extracted_data[0][0]+","+extracted_data[0][1]+","+extracted_data[0][2]+">END_CLOTHES_PRIM", "")
+
+			if "CLOTHES_SECO" in recvBuffer: 
+				print("cjecl cloth seco")
 				#Parse data 
 				extracted_data = re.findall("CLOTHES_SECO<(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)>END_CLOTHES_SECO", data)
 				#Register the new color in the player dict
 				players[player_id]["clothesSeco"] = (extracted_data[0][0],extracted_data[0][1],extracted_data[0][2])
 			
-			if "CLOTHES_TERT" in data: 
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CLOTHES_SECO<"+extracted_data[0][0]+","+extracted_data[0][1]+","+extracted_data[0][2]+">END_CLOTHES_SECO", "")
+
+			if "CLOTHES_TERT" in recvBuffer: 
+				print("cjecl cloth tert")
 				#Parse data 
 				extracted_data = re.findall("CLOTHES_TERT<(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)>END_CLOTHES_TERT", data)
 				#Register the new color in the player dict
 				players[player_id]["clothesTert"] = (extracted_data[0][0],extracted_data[0][1],extracted_data[0][2])
 
-			if "CLOTHES_QUAD" in data: 
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CLOTHES_TERT<"+extracted_data[0][0]+","+extracted_data[0][1]+","+extracted_data[0][2]+">END_CLOTHES_TERT", "")
+
+			if "CLOTHES_QUAD" in recvBuffer: 
+				print("cjecl cloth wuad")
 				#Parse data 
 				extracted_data = re.findall("CLOTHES_QUAD<(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)>END_CLOTHES_QUAD", data)
 				#Register the new color in the player dict
 				players[player_id]["clothesQuad"] = (extracted_data[0][0],extracted_data[0][1],extracted_data[0][2])
+
+				#REMOVE COMMAND FROM BUFFER...
+				recvBuffer = recvBuffer.replace("CLOTHES_QUAD<"+extracted_data[0][0]+","+extracted_data[0][1]+","+extracted_data[0][2]+">END_CLOTHES_QUAD", "")
 
 			#concerning MAP RECORDING
 			if "NEW_MAP" in data:
@@ -178,6 +233,9 @@ def threaded_client(conn, player_id):
 					#REGISTER IN WORLD DATA
 					world_tiles[temp_tile_x][temp_tile_y][temp_tile_z] = temp_tile_index
 
+					#REMOVE COMMAND FROM BUFFER....
+					recvBuffer = recvBuffer.replace("PUT_TILE_DATA<"+tile_tuple[0]+","+tile_tuple[1]+","+tile_tuple[2]+","+tile_tuple[3]+">END_PUT_TILE_DATA", "")
+
 
 			conn.sendall("MSG_CONF")
 			#We will send these commands every time we get a new message
@@ -185,7 +243,7 @@ def threaded_client(conn, player_id):
 			#for key in newCres.keys():
 			#	print(key)
 
-			#print(players)
+			#print(recvBuffer)
 
 		except KeyboardInterrupt:
 			print("closing from key")
@@ -213,7 +271,12 @@ def console_input_thread():
 			print(world_tiles)
 
 		if read_input == "p":
-			print(players)
+			print(players)		
+
+		parse_data = re.findall("sp (\d+) (\d+) (\d+)",read_input)
+		if parse_data:
+			print(world_tiles[ int(parse_data[0][0]) ][int(parse_data[0][1])][int(parse_data[0][2])])
+
 
 start_new_thread(console_input_thread, ())
 
@@ -250,4 +313,9 @@ while True:
 	print("connected to:", addr)
 	start_new_thread(threaded_client, (conn, player_counter))
 	player_counter = player_counter + 1
+
+
+
+
+
 
