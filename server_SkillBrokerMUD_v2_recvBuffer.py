@@ -18,6 +18,27 @@ num_y_layers = 30
 num_z_layers = 20
 world_tiles = [] #3D array for storing tile indices of the world
 				#ACCESS:  world_tiles[x][y][z] = tile_index
+world_colors = [] #list of tuples containing RGB components of color
+#WOLRD COLOR INDICES:
+# 0 - BRICK PRIM
+# 1 - BRICK SECO
+# 2 - BASIC FLOOR PRIM
+# 3 - BASIC FLOOR SECO
+# 4 - BASIC DOOR PRIM
+# 5 - BASIC DOOR SECO
+# 6 - KITCHEN FLOOR PRIM
+# 7 - KITCHEN FLOOR SECO
+# 8 - PERSONAL ROOM FURNITURE PRIM
+# 9 - PERSONAL ROOM FURNITURE SECO
+# 10 - PUBLIC ROOM FURNITURE PRIM
+# 11 - PUBLIC ROOM FURNITURE SECO
+# 12 - WINDOW PRIM (0.7 ALPHA, NOT stored here)
+# 13 - BACKGROUND COLOR
+# 14 - FOLIAGE PRIM
+# 15 - FOLIAGE SECO
+#
+# 16 - CURTAINS PRIM
+
 
 #Players are dict objects that store user profile....
 # Player = {
@@ -240,6 +261,19 @@ def threaded_client(conn, player_id):
 					#REMOVE COMMAND FROM BUFFER....
 					recvBuffer = recvBuffer.replace("PUT_TILE_DATA<"+tile_tuple[0]+","+tile_tuple[1]+","+tile_tuple[2]+","+tile_tuple[3]+">END_PUT_TILE_DATA", "")
 
+			if "PUT_COLOR_DATA" in recvBuffer:
+				#Parse data
+				extracted_data = re.findall("PUT_COLOR_DATA<(\d+),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)>END_PUT_COLOR_DATA", recvBuffer)
+				#extrated_data now is a list of tuples of the form (world_color_index, r, g, b)
+				for color_data_tuple in extracted_data:
+					#convert world_color_index to int
+					world_color_index = int(color_data_tuple[0])
+					#now enter the values of the RGB into the world_colors list of tuples
+					world_colors[world_color_index] = (color_data_tuple[1],color_data_tuple[2],color_data_tuple[3])
+
+					#REMOVE COMMAND FROM BUFFER....
+					recvBuffer = recvBuffer.replace("PUT_COLOR_DATA<"+color_data_tuple[0]+","+color_data_tuple[1]+","+color_data_tuple[2]+","+color_data_tuple[3]+">END_PUT_COLOR_DATA", "")
+
 			if "FLUSH_BUFFER" in recvBuffer:
 				#clear buffer
 				recvBuffer = ""
@@ -281,7 +315,10 @@ def console_input_thread():
 			print(world_tiles)
 
 		if read_input == "p":
-			print(players)		
+			print(players)	
+
+		if read_input == "c":
+			print(world_colors)	
 
 		parse_data = re.findall("sp (\d+) (\d+) (\d+)",read_input)
 		if parse_data:
@@ -294,6 +331,7 @@ start_new_thread(console_input_thread, ())
 ###########################
 
 #Initialize world variables...
+#World Tiles
 for i in range(num_x_layers):
 	temp_row = []
 	for j in range(num_y_layers):
@@ -304,6 +342,9 @@ for i in range(num_x_layers):
 		temp_row.append(temp_col)
 	world_tiles.append(temp_row)
 
+#initialize World Colors
+for i in range(17):
+	world_colors.append( (9999,9999,9999) ) #append an entire tuple to create a list of tuples
 
 #Bind Server Socket
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
