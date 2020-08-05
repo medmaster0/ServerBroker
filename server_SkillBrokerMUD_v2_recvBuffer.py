@@ -84,7 +84,7 @@ world_colors = [] #list of tuples containing RGB components of color
 ##FUNCTION DEF
 def threaded_client(conn, player_id):
 	#Initial Message
-	conn.send("hi from serve")
+	#conn.send("hi from serve")
 
 	isRegistered = False #keeps track of if we made a dictionary and registered it
 
@@ -245,6 +245,28 @@ def threaded_client(conn, player_id):
 				print(extracted_data)
 				#
 
+			if "REQUEST_MAP" in recvBuffer:
+				#begin transmitting stored map data to client....
+				conn.sendall("NEW_MAP<"+str(num_x_layers)+","+str(num_y_layers)+","+str(num_z_layers)+">END_NEW_MAP")
+
+				#Send World Tiles
+				#Iterate through the whole world_tiles list and transmt data
+				for i in range(num_x_layers):
+					for j in range(num_y_layers):
+						for k in range(num_z_layers):
+							tile_index = world_tiles[i][j][k]
+							conn.sendall("PUT_TILE_DATA<"+str(i)+","+str(j)+","+str(k)+","+str(tile_index)+">END_PUT_TILE_DATA")
+
+				#Send World Colors....
+				for i in range(len(world_colors)):
+					#Identify the color tuple
+					world_color = world_colors[i]
+					#Construct the TCP message
+					conn.sendall("PUT_COLOR_DATA<"+str(i)+","+str(world_color[0])+","+str(world_color[1])+","+str(world_color[2]) + ">END_PUT_COLOR_DATA" )
+
+				#REMOVE COMMAND FROM BUGGER
+				recvBuffer = recvBuffer.replace("REQUEST_MAP","")
+
 			if "PUT_TILE_DATA" in recvBuffer:
 				#Parse data
 				extracted_data = re.findall("PUT_TILE_DATA<(\d+),(\d+),(\d+),(\d+)>END_PUT_TILE_DATA", recvBuffer)
@@ -281,7 +303,7 @@ def threaded_client(conn, player_id):
 				#REMOVE COMMAND FROM BUFFER
 				recvBuffer = recvBuffer.replace("FLUSH_BUFFER", "")
 
-			conn.sendall("MSG_CONF")
+			#conn.sendall("MSG_CONF")
 			#We will send these commands every time we get a new message
 			#SEND newCre positions
 			#for key in newCres.keys():
